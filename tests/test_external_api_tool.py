@@ -37,3 +37,7 @@ def test_get_current_weather_city_not_found(mock_get):
     result = get_current_weather.invoke({"city_name": "VilleInexistanteXYZ"})
 
     assert "introuvable" in result
+
+def test_get_current_weather_rejects_empty_city():
+    result = get_current_weather.invoke({"city_name": " "})
+    assert "Entrée invalide" in result

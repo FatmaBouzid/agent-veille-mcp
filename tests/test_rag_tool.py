@@ -43,3 +43,7 @@ def test_search_internal_docs_no_results(test_docs_dir, monkeypatch):
     )
     result = search_internal_docs.invoke({"query": "question sans rapport"})
     assert "Aucun document pertinent" in result
+
+def test_search_internal_docs_rejects_empty_query():
+    result = search_internal_docs.invoke({"query": "ab"})
+    assert "Entrée invalide" in result

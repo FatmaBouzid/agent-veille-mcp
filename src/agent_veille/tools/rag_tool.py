@@ -1,16 +1,16 @@
-"""
-Wrapper du RAG en tant que "tool" utilisable par l'agent LangGraph.
-
-Pourquoi un wrapper séparé plutôt qu'appeler retrieve() directement dans
-le graphe : LangGraph/LangChain attendent une interface "tool" standardisée
-(nom, description, schéma d'input) pour que le LLM puisse décider QUAND
-l'appeler. La description ci-dessous EST ce que le LLM lit pour juger si
-ce tool est pertinent pour la question posée — elle doit être précise.
-"""
-
 from langchain_core.tools import tool
 
+from agent_veille.guardrails.validators import validate_input, with_fallback
 from agent_veille.rag.retriever import retrieve
+from agent_veille.tools.schemas import SearchDocsInput
+
+
+@with_fallback("Impossible de consulter la base de connaissances interne pour le moment.")
+def _search_internal_docs_impl(query: str) -> str:
+    chunks = retrieve(query, k=3)
+    if not chunks:
+        return "Aucun document pertinent trouvé dans la base de connaissances."
+    return "\n\n---\n\n".join(chunks)
 
 
 @tool
@@ -22,7 +22,8 @@ def search_internal_docs(query: str) -> str:
     ou des documents que l'utilisateur a fournis, PAS pour des questions
     sur l'actualité, la météo, ou des faits en temps réel.
     """
-    chunks = retrieve(query, k=3)
-    if not chunks:
-        return "Aucun document pertinent trouvé dans la base de connaissances."
-    return "\n\n---\n\n".join(chunks)
+    validated = validate_input(SearchDocsInput, {"query": query})
+    if isinstance(validated, str):
+        return validated  # message d'erreur de validation
+
+    return _search_internal_docs_impl(validated.query)

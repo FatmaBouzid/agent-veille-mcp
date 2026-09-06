@@ -14,6 +14,8 @@ import httpx
 from langchain_core.tools import tool
 
 from agent_veille.config import settings
+from agent_veille.guardrails.validators import validate_input, with_fallback
+from agent_veille.tools.schemas import WeatherInput
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
@@ -51,13 +53,11 @@ def _fetch_current_weather(latitude: float, longitude: float) -> dict:
     return response.json()["current"]
 
 
-@tool
-def get_current_weather(city_name: str) -> str:
-    """
-    Donne la météo actuelle (température, vent) pour une ville donnée.
-    Utilise ce tool uniquement pour des questions sur la météo ou le climat
-    actuel d'un lieu précis, PAS pour des questions techniques ou documentaires.
-    """
+
+
+
+@with_fallback("Le service météo est momentanément indisponible.")
+def _get_current_weather_impl(city_name: str) -> str:
     coordinates = _geocode_city(city_name)
     if coordinates is None:
         return f"Ville '{city_name}' introuvable."
@@ -70,3 +70,17 @@ def get_current_weather(city_name: str) -> str:
         f"{weather['temperature_2m']}°C, "
         f"vent à {weather['wind_speed_10m']} km/h."
     )
+
+
+@tool
+def get_current_weather(city_name: str) -> str:
+    """
+    Donne la météo actuelle (température, vent) pour une ville donnée.
+    Utilise ce tool uniquement pour des questions sur la météo ou le climat
+    actuel d'un lieu précis, PAS pour des questions techniques ou documentaires.
+    """
+    validated = validate_input(WeatherInput, {"city_name": city_name})
+    if isinstance(validated, str):
+        return validated
+
+    return _get_current_weather_impl(validated.city_name)
