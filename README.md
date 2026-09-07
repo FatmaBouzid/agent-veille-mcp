@@ -28,44 +28,43 @@ directement — puis boucle jusqu'à obtenir une réponse complète (pattern ReA
 
 ## Installation
 
-\`\`\`bash
+```bash
 git clone https://github.com/FatmaBouzid/agent-veille-mcp.git
 cd agent-veille-mcp
 uv sync
-\`\`\`
+```
 
 Crée un fichier `.env` à la racine avec ta clé Groq (gratuite, sans CB, sur [console.groq.com](https://console.groq.com)) :
 
-`
 
 ## Utilisation
 
 **Indexer des documents dans le RAG :**
-\`\`\`bash
+```bash
 uv run python -m agent_veille.rag.ingest
-\`\`\`
+```
 
 **Lancer l'agent en CLI interactive :**
-\`\`\`bash
+```bash
 uv run python scripts/run_agent.py
-\`\`\`
+```
 
 **Lancer le serveur MCP :**
-\`\`\`bash
+```bash
 uv run python src/agent_veille/mcp_server/server.py
-\`\`\`
+```
 
 **Inspecter le serveur MCP visuellement :**
-\`\`\`bash
+```bash
 uv run mcp dev src/agent_veille/mcp_server/server.py
-\`\`\`
+```
 
 ## Tests
 
-\`\`\`bash
+```bash
 uv run pytest
 uv run ruff check src tests
-\`\`\`
+```
 
 ## Choix d'architecture notables
 
