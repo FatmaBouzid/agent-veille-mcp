@@ -21,8 +21,11 @@ from langgraph.prebuilt import ToolNode
 from agent_veille.agent.prompts import SYSTEM_PROMPT
 from agent_veille.agent.state import AgentState
 from agent_veille.config import settings
+from agent_veille.observability.logger import get_logger, log_tool_call
 from agent_veille.tools.external_api_tool import get_current_weather
 from agent_veille.tools.rag_tool import search_internal_docs
+
+logger = get_logger(__name__)
 
 TOOLS = [search_internal_docs, get_current_weather]
 
@@ -39,21 +42,21 @@ def _build_llm() -> ChatGroq:
     return llm.bind_tools(TOOLS)
 
 
+
 def agent_node(state: AgentState) -> dict:
-    """
-    Nœud "raisonnement" : le LLM lit l'historique et décide de répondre
-    directement OU d'appeler un tool.
-    """
     llm = _build_llm()
     messages = state["messages"]
 
-    # Injecte le prompt système seulement s'il n'est pas déjà présent
-    # (évite de le dupliquer à chaque cycle de la boucle ReAct).
     if not messages or messages[0].type != "system":
         from langchain_core.messages import SystemMessage
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
 
     response = llm.invoke(messages)
+
+    if getattr(response, "tool_calls", None):
+        for tc in response.tool_calls:
+            log_tool_call(logger, tc["name"], tc["args"])
+
     return {"messages": [response]}
 
 
